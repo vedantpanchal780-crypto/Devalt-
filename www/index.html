@@ -50,53 +50,108 @@ code.ic{background:#0b0d10;padding:1px 5px;border-radius:4px;font:12.5px ui-mono
 .drop{border:2px dashed var(--acc)!important;background:#2a2112}
 mark{background:#6b4a10;color:#fff;border-radius:2px}
 </style>
+<style>
+.ov{position:fixed;inset:0;z-index:40;display:flex;background:rgba(0,0,0,.55)}
+.ov.hidden{display:none}
+.sheetp{width:100%;max-width:520px;margin:0 auto;background:var(--panel);border-radius:18px 18px 0 0;padding:10px 10px calc(10px + env(safe-area-inset-bottom));border:1px solid var(--line)}
+.sitem{display:flex;align-items:center;gap:14px;width:100%;min-height:52px;padding:0 12px;background:none;border:0;color:var(--text);font-size:16px;border-radius:10px;cursor:pointer;text-align:left}
+.sitem:active,.sitem:hover{background:#262a33}.sitem.dng{color:#ff6b6b}
+.ib{min-width:40px;height:40px;display:inline-grid;place-items:center;border-radius:10px;background:transparent;border:0;color:var(--text);cursor:pointer;font-size:18px}
+.ib:hover{background:#262a33}.ib.sm{min-width:34px;height:34px;color:var(--mute)}.ib.sm:hover{color:var(--text)}
+.dots{margin-left:auto;width:34px;height:34px;display:grid;place-items:center;color:var(--mute);border-radius:8px;flex-shrink:0}
+.cbox{display:flex;align-items:flex-end;gap:6px;background:#23272f;border:1px solid var(--line);border-radius:24px;padding:6px}
+.cbox textarea{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);resize:none;font:inherit;font-size:16px;line-height:1.45;padding:8px 4px;min-height:40px;max-height:45vh;overflow-y:auto}
+.cbox textarea.big{min-height:110px}
+.rb{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#2f343e;border:0;color:var(--text);cursor:pointer;flex-shrink:0}
+.rb.send{background:var(--acc);color:#1a1200}.rb.send:disabled{opacity:.35}
+.chip{display:flex;align-items:center;gap:6px;background:#23272f;border:1px solid var(--line);border-radius:12px;padding:4px 6px;flex-shrink:0}
+.chip img{width:40px;height:40px;object-fit:cover;border-radius:8px}.chip button{background:none;border:0;color:var(--mute);cursor:pointer;display:grid}
+.msg{margin-bottom:14px;max-width:760px}
+.bubble{background:#1f232b;border:1px solid var(--line);border-radius:6px 16px 16px 16px;padding:10px 12px;font-size:15px;display:inline-block;max-width:100%;min-width:90px}
+.bubble .mt{font-size:11px;color:var(--mute);margin-top:6px;text-align:right}
+.acts{display:flex;gap:2px;margin-top:2px;margin-left:4px}
+.att-img{display:block;max-width:100%;max-height:260px;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#0b0d10;min-height:60px}
+.att-file{display:flex;align-items:center;gap:10px;background:#15181d;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;cursor:pointer;min-width:200px}
+.day{text-align:center;color:var(--mute);font-size:12px;margin:10px 0 14px}
+.nav{min-height:42px}
+</style>
 </head>
+
 <body>
 <div class="flex h-full" style="padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
   <div id="scrim" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden" onclick="toggleSide(false)"></div>
   <aside id="side" class="flex flex-col w-72 shrink-0" style="background:var(--side);border-right:1px solid var(--line)">
     <div class="p-3 flex items-center justify-between">
-      <b style="font-size:16px;letter-spacing:.3px">DevVault</b>
+      <b style="font-size:16px">DevVault</b>
       <button class="btn" onclick="addNode(null)">+ Block</button>
     </div>
     <div class="px-3 pb-2"><input id="gsearch" class="inp" placeholder="Search everything…" oninput="onSearch(this.value)"></div>
     <nav id="tree" class="flex-1 overflow-y-auto px-2 pb-2"></nav>
     <div class="p-3 flex gap-2" style="border-top:1px solid var(--line)">
-      <button class="btn flex-1" onclick="exportAll()">Export backup</button>
-      <button class="btn flex-1" onclick="$('imp').click()">Import</button>
-      <input id="imp" type="file" accept=".json" class="hidden" onchange="importAll(this.files[0]);this.value=''">
+      <button class="btn flex-1" onclick="exportAll()">Backup</button>
+      <button class="btn flex-1" onclick="$('imp').click()">Restore</button>
+      <input id="imp" type="file" accept=".json,application/json" class="hidden" onchange="importAll(this.files[0]);this.value=''">
     </div>
   </aside>
-  <main class="flex-1 flex flex-col min-w-0 h-full" id="main">
+  <main class="flex-1 flex flex-col min-w-0 h-full">
     <header class="flex items-center gap-2 px-3 py-2" style="border-bottom:1px solid var(--line)">
-      <button class="btn md:hidden" onclick="toggleSide(true)" aria-label="Menu">☰</button>
-      <div id="title" class="font-semibold truncate"></div><div id="hdr" class="ml-auto flex gap-1"></div>
+      <button class="ib md:hidden" onclick="toggleSide(true)" aria-label="Menu">☰</button>
+      <div id="title" class="font-semibold truncate flex-1 min-w-0"></div>
+      <div id="hdr"></div>
     </header>
-    <section id="feed" class="flex-1 overflow-y-auto p-3 space-y-3"></section>
-    <footer id="composer" class="p-3" style="border-top:1px solid var(--line)">
-      <div class="flex gap-2 mb-2 text-xs">
-        <button class="btn" id="m-text" onclick="setMode('text')">Text</button>
-        <button class="btn" id="m-check" onclick="setMode('check')">Checklist</button>
-        <button class="btn" onclick="$('file').click()">Upload file</button>
-        <input id="file" type="file" multiple class="hidden" onchange="uploadFiles(this.files);this.value=''">
+    <section id="feed" class="flex-1 overflow-y-auto p-3"></section>
+    <footer id="composer" class="px-3 pb-3 pt-2">
+      <div id="chips" class="flex gap-2 pb-2" style="overflow-x:auto"></div>
+      <div class="cbox">
+        <button class="rb" onclick="plusMenu()" aria-label="Attach"></button>
+        <textarea id="input" rows="1" placeholder="Write a message…" oninput="autosize()" onfocus="this.classList.add('big');autosize()" onblur="if(!this.value)this.classList.remove('big');autosize()"></textarea>
+        <button class="rb" id="bExpand" onclick="expandComposer()" aria-label="Expand"></button>
+        <button class="rb send" id="bSend" onclick="sendMsg()" aria-label="Send"></button>
       </div>
-      <div class="flex gap-2 items-end">
-        <textarea id="input" rows="2" class="inp" style="resize:none;max-height:160px"></textarea>
-        <button class="btn btn-acc" onclick="submitItem()">Add</button>
-      </div>
-      <div class="text-xs mt-1" style="color:var(--mute)" id="hint"></div>
+      <input id="fPhoto" type="file" accept="image/*,video/*" multiple class="hidden" onchange="addPending(this.files);this.value=''">
+      <input id="fCam" type="file" accept="image/*" capture="environment" class="hidden" onchange="addPending(this.files);this.value=''">
+      <input id="fDoc" type="file" multiple class="hidden" onchange="addPending(this.files);this.value=''">
     </footer>
   </main>
 </div>
-<div id="toast" class="fixed left-1/2 bottom-6 -translate-x-1/2 px-3 py-2 rounded-md hidden z-50" style="background:#000;border:1px solid var(--line)"></div>
+
+<div id="sheet" class="ov hidden" style="align-items:flex-end" onclick="if(event.target===this)closeSheet()">
+  <div class="sheetp"><div id="sheetT" class="font-semibold" style="padding:6px 8px 10px"></div><div id="sheetL"></div></div>
+</div>
+<div id="editor" class="ov hidden" style="flex-direction:column;background:var(--bg);z-index:60;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
+  <div class="flex items-center gap-2 p-3" style="border-bottom:1px solid var(--line)">
+    <button class="ib" onclick="closeEditor()" id="edX"></button>
+    <div id="edTitle" class="font-semibold flex-1"></div>
+    <button class="btn btn-acc" id="edDone" onclick="editorDone()">Done</button>
+  </div>
+  <textarea id="edTa" class="flex-1" style="background:transparent;border:0;outline:0;color:var(--text);padding:16px;font:inherit;font-size:16px;line-height:1.6;resize:none" placeholder="Write here…"></textarea>
+</div>
+<div id="viewer" class="ov hidden" style="flex-direction:column;background:#000;z-index:70" onclick="closeViewer()">
+  <div class="flex justify-end gap-2 p-3"><button class="ib" id="vSave" onclick="event.stopPropagation()"></button><button class="ib" id="vX"></button></div>
+  <div class="flex-1 flex items-center justify-center" style="min-height:0"><img id="vImg" style="max-width:100%;max-height:100%;object-fit:contain" alt=""></div>
+</div>
+<div id="toast" class="fixed left-1/2 bottom-6 -translate-x-1/2 px-3 py-2 rounded-md hidden z-50" style="background:#000;border:1px solid var(--line);z-index:90"></div>
 
 <script>
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STORES=['projects','channels','nodes','items','blobs'];
+const ICON={
+copy:'<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
+edit:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+trash:'<path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+plus:'<path d="M5 12h14M12 5v14"/>',up:'<path d="m5 12 7-7 7 7M12 19V5"/>',down:'<path d="m19 12-7 7-7-7M12 5v14"/>',
+expand:'<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
+more:'<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>',
+image:'<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+x:'<path d="M18 6 6 18M6 6l12 12"/>',dl:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>'};
+const ic=(k,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
 
-/* ---------- Storage: IndexedDB with localStorage fallback ---------- */
+/* ---------- Storage ---------- */
 const DB={db:null,mem:null,
   async init(){
     try{
@@ -106,239 +161,301 @@ const DB={db:null,mem:null,
         r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
       });
     }catch(e){
-      this.db=null;
-      try{this.mem=JSON.parse(localStorage.getItem('devvault')||'{}')}catch(_){this.mem={}}
-      STORES.forEach(n=>this.mem[n]=this.mem[n]||{});
-      toast('IndexedDB unavailable — using limited localStorage');
+      this.db=null;try{this.mem=JSON.parse(localStorage.getItem('devvault')||'{}')}catch(_){this.mem={}}
+      STORES.forEach(n=>this.mem[n]=this.mem[n]||{});toast('IndexedDB unavailable — limited storage');
     }
   },
   _save(){try{localStorage.setItem('devvault',JSON.stringify(this.mem))}catch(e){toast('Storage full')}},
-  all(s){
-    if(!this.db)return Promise.resolve(Object.values(this.mem[s]));
-    return new Promise((res,rej)=>{const r=this.db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-  },
-  get(s,id){
-    if(!this.db)return Promise.resolve(this.mem[s][id]);
-    return new Promise((res,rej)=>{const r=this.db.transaction(s).objectStore(s).get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
-  },
-  put(s,v){
-    if(!this.db){this.mem[s][v.id]=v;this._save();return Promise.resolve()}
-    return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite');t.objectStore(s).put(v);t.oncomplete=res;t.onerror=()=>rej(t.error)});
-  },
-  del(s,id){
-    if(!this.db){delete this.mem[s][id];this._save();return Promise.resolve()}
-    return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite');t.objectStore(s).delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error)});
-  },
-  async clear(){
-    if(!this.db){STORES.forEach(n=>this.mem[n]={});this._save();return}
-    for(const s of STORES)await new Promise(r=>{const t=this.db.transaction(s,'readwrite');t.objectStore(s).clear();t.oncomplete=r});
-  }
+  all(s){if(!this.db)return Promise.resolve(Object.values(this.mem[s]));
+    return new Promise((res,rej)=>{const r=this.db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+  get(s,id){if(!this.db)return Promise.resolve(this.mem[s][id]);
+    return new Promise((res,rej)=>{const r=this.db.transaction(s).objectStore(s).get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+  put(s,v){if(!this.db){this.mem[s][v.id]=v;this._save();return Promise.resolve()}
+    return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite');t.objectStore(s).put(v);t.oncomplete=res;t.onerror=()=>rej(t.error)})},
+  del(s,id){if(!this.db){delete this.mem[s][id];this._save();return Promise.resolve()}
+    return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite');t.objectStore(s).delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error)})},
+  async clear(){if(!this.db){STORES.forEach(n=>this.mem[n]={});this._save();return}
+    for(const s of STORES)await new Promise(r=>{const t=this.db.transaction(s,'readwrite');t.objectStore(s).clear();t.oncomplete=r})}
 };
 
 /* ---------- State ---------- */
-let S={nodes:[],items:[],sel:null,mode:'text',query:'',open:{}};
+let S={nodes:[],items:[],sel:null,query:'',open:{},pending:[],drafts:{}};
 const node=id=>S.nodes.find(n=>n.id===id);
 const kids=pid=>S.nodes.filter(n=>n.parentId===pid);
-function descendants(id){const out=[];(function walk(p){kids(p).forEach(k=>{out.push(k.id);walk(k.id)})})(id);return out}
+function descendants(id){const o=[];(function w(p){kids(p).forEach(k=>{o.push(k.id);w(k.id)})})(id);return o}
 function pathOf(id){const p=[];let n=node(id);while(n){p.unshift(n.name);n=n.parentId?node(n.parentId):null}return p}
-
 async function load(){
-  S.nodes=(await DB.all('nodes')).sort((a,b)=>a.created-b.created);
+  S.nodes=(await DB.all('nodes')).map(n=>({...n,order:n.order??n.created})).sort((a,b)=>a.order-b.order);
   S.items=(await DB.all('items')).sort((a,b)=>a.created-b.created);
 }
-/* Convert data from the earlier Project/Channel version into branches */
 async function migrate(){
-  const ps=await DB.all('projects'),cs=await DB.all('channels');
-  if(!ps.length&&!cs.length)return;
-  for(const p of ps){await DB.put('nodes',{id:p.id,parentId:null,name:p.name,created:p.created});await DB.del('projects',p.id)}
-  for(const c of cs){await DB.put('nodes',{id:c.id,parentId:c.projectId,name:c.name,created:c.created});await DB.del('channels',c.id)}
-  for(const it of await DB.all('items')){
-    if(it.channelId){it.nodeId=it.channelId;delete it.channelId;delete it.projectId;await DB.put('items',it)}
-  }
+  const ps=await DB.all('projects'),cs=await DB.all('channels');if(!ps.length&&!cs.length)return;
+  for(const p of ps){await DB.put('nodes',{id:p.id,parentId:null,name:p.name,created:p.created,order:p.created});await DB.del('projects',p.id)}
+  for(const c of cs){await DB.put('nodes',{id:c.id,parentId:c.projectId,name:c.name,created:c.created,order:c.created});await DB.del('channels',c.id)}
+  for(const it of await DB.all('items'))if(it.channelId){it.nodeId=it.channelId;delete it.channelId;delete it.projectId;await DB.put('items',it)}
 }
-function toast(m){const t=$('toast');t.textContent=m;t.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),2200)}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),2400)}
 function toggleSide(o){$('side').classList.toggle('open',o);$('scrim').classList.toggle('hidden',!o)}
 
-/* ---------- Branch management (any depth) ---------- */
+/* ---------- Bottom sheet ---------- */
+function sheet(title,items){
+  $('sheetT').textContent=title;sheet.items=items;
+  $('sheetL').innerHTML=items.map((x,i)=>`<button class="sitem ${x.danger?'dng':''}" onclick="sheetPick(${i})">${ic(x.icon,20)}<span>${esc(x.label)}</span></button>`).join('');
+  $('sheet').classList.remove('hidden');
+}
+function sheetPick(i){const it=sheet.items[i];closeSheet();it.fn()}
+function closeSheet(){$('sheet').classList.add('hidden')}
+function plusMenu(){sheet('Add to message',[
+  {icon:'image',label:'Photo / Video',fn:()=>$('fPhoto').click()},
+  {icon:'camera',label:'Camera',fn:()=>$('fCam').click()},
+  {icon:'file',label:'File / Document',fn:()=>$('fDoc').click()}])}
+
+/* ---------- Branches ---------- */
 async function addNode(parentId){
-  const where=parentId?` inside "${node(parentId).name}"`:' (top level)';
-  const name=prompt('Name of the new branch'+where);if(!name||!name.trim())return;
-  const n={id:uid(),parentId:parentId||null,name:name.trim(),created:Date.now()};
-  await DB.put('nodes',n);await load();
-  if(parentId)S.open[parentId]=true;S.sel=n.id;S.query='';$('gsearch').value='';render();
+  const name=prompt('Name of the new branch'+(parentId?` inside "${node(parentId).name}"`:' (top level)'));if(!name||!name.trim())return;
+  const n={id:uid(),parentId:parentId||null,name:name.trim(),created:Date.now(),order:Date.now()};
+  await DB.put('nodes',n);await load();if(parentId)S.open[parentId]=true;select(n.id);
 }
-async function renameNode(id){
-  const n=node(id);const v=prompt('Rename',n.name);if(!v||!v.trim())return;
-  n.name=v.trim();await DB.put('nodes',n);await load();render();
+async function renameNode(id){const n=node(id),v=prompt('Rename',n.name);if(!v||!v.trim())return;n.name=v.trim();await DB.put('nodes',n);await load();render()}
+async function moveNode(id,dir){
+  const n=node(id),sibs=kids(n.parentId),i=sibs.findIndex(x=>x.id===id),j=i+dir;
+  if(j<0||j>=sibs.length)return toast(dir<0?'Already first':'Already last');
+  sibs.forEach((s,k)=>s.order=k);[sibs[i].order,sibs[j].order]=[sibs[j].order,sibs[i].order];
+  for(const s of sibs)await DB.put('nodes',s);await load();render();
 }
+function nodeMenu(id){sheet(node(id).name,[
+  {icon:'plus',label:'Add sub-branch',fn:()=>addNode(id)},
+  {icon:'edit',label:'Rename',fn:()=>renameNode(id)},
+  {icon:'up',label:'Move up',fn:()=>moveNode(id,-1)},
+  {icon:'down',label:'Move down',fn:()=>moveNode(id,1)},
+  {icon:'trash',label:'Delete',danger:1,fn:()=>delNode(id)}])}
 async function delNode(id){
-  const ids=[id,...descendants(id)];
-  const its=S.items.filter(i=>ids.includes(i.nodeId));
-  const extra=ids.length>1?` and ${ids.length-1} sub-branch(es)`:'';
-  if(!confirm(`Delete "${node(id).name}"${extra}, including ${its.length} item(s)? This can't be undone.`))return;
-  for(const it of its){if(it.blobId)await DB.del('blobs',it.blobId);await DB.del('items',it.id)}
-  for(const i of ids)await DB.del('nodes',i);
-  if(ids.includes(S.sel))S.sel=null;await load();render();
+  const ids=[id,...descendants(id)],its=S.items.filter(i=>ids.includes(i.nodeId));
+  if(!confirm(`Delete "${node(id).name}"${ids.length>1?` and ${ids.length-1} sub-branch(es)`:''} with ${its.length} message(s)? This can't be undone.`))return;
+  for(const it of its){await purgeItem(it)}
+  for(const i of ids){await DB.del('nodes',i);delete S.drafts[i]}
+  if(ids.includes(S.sel)){S.sel=null;S.pending=[];$('input').value=''}
+  await load();render();
 }
 function select(id){
+  if(S.sel)S.drafts[S.sel]={t:$('input').value,p:S.pending};
   S.sel=id;S.query='';$('gsearch').value='';
-  if(kids(id).length)S.open[id]=true;render();toggleSide(false);
+  const d=S.drafts[id]||{t:'',p:[]};$('input').value=d.t;S.pending=d.p;
+  if(kids(id).length)S.open[id]=true;
+  renderChips();autosize();render(true);toggleSide(false);
 }
 
-/* ---------- Items ---------- */
-function setMode(m){S.mode=m;renderComposer()}
-function renderComposer(){
-  $('m-text').style.borderColor=S.mode==='text'?'var(--acc)':'';
-  $('m-check').style.borderColor=S.mode==='check'?'var(--acc)':'';
-  $('input').placeholder=S.mode==='check'?'One task per line…':'Paste a prompt, note or snippet… (use ``` for code blocks)';
-  $('hint').textContent=S.mode==='check'?'Each line becomes a checkbox.':'Ctrl/Cmd+Enter to add. Drop files anywhere in the feed.';
-  $('composer').style.display=(S.sel&&!S.query.trim())?'':'none';
+/* ---------- Messages ---------- */
+function norm(it){
+  if(it.type==='file')return{text:'',files:[{name:it.name,size:it.size,mime:it.mime,blobId:it.blobId}]};
+  if(it.type==='check')return{text:'',files:[],tasks:it.tasks};
+  return{text:it.text||'',files:it.files||[]};
 }
-async function submitItem(){
-  const v=$('input').value;if(!v.trim()||!S.sel)return;
-  const it={id:uid(),nodeId:S.sel,created:Date.now()};
-  if(S.mode==='check'){it.type='check';it.tasks=v.split('\n').map(t=>t.trim()).filter(Boolean).map(t=>({t,done:false}))}
-  else{it.type='text';it.text=v}
-  await DB.put('items',it);$('input').value='';await load();render(true);
+async function purgeItem(it){for(const f of norm(it).files)if(f.blobId)await DB.del('blobs',f.blobId);await DB.del('items',it.id)}
+function addPending(files){for(const f of files)S.pending.push({file:f,url:f.type.startsWith('image/')?URL.createObjectURL(f):null});renderChips();autosize()}
+function renderChips(){
+  $('chips').innerHTML=S.pending.map((p,i)=>`<div class="chip">${p.url?`<img src="${p.url}" alt="">`:ic('file')}<span class="truncate" style="max-width:110px">${esc(p.file.name||'photo')}</span><button onclick="S.pending.splice(${i},1);renderChips();autosize()" aria-label="Remove">${ic('x',14)}</button></div>`).join('');
+  $('chips').style.display=S.pending.length?'flex':'none';
 }
-async function uploadFiles(files){
-  if(!S.sel)return toast('Select a branch first');
-  for(const f of files){
-    const bid=uid();
-    try{
-      await DB.put('blobs',{id:bid,blob:f});
-      await DB.put('items',{id:uid(),type:'file',nodeId:S.sel,created:Date.now(),name:f.name,size:f.size,mime:f.type||'application/octet-stream',blobId:bid});
-    }catch(e){toast('Could not store '+f.name)}
-  }
-  await load();render(true);
+function autosize(){
+  const t=$('input');t.style.height='auto';t.style.height=Math.min(t.scrollHeight,innerHeight*.45)+'px';
+  $('bSend').disabled=!(t.value.trim()||S.pending.length);
 }
-async function delItem(id){
-  const it=S.items.find(i=>i.id===id);if(!it||!confirm('Delete this item?'))return;
-  if(it.blobId)await DB.del('blobs',it.blobId);await DB.del('items',id);await load();render();
+async function sendMsg(){
+  const text=$('input').value.trim();if(!S.sel||(!text&&!S.pending.length))return;
+  try{
+    const files=[];
+    for(const p of S.pending){const bid=uid();await DB.put('blobs',{id:bid,blob:p.file});files.push({name:p.file.name||'photo.jpg',size:p.file.size,mime:p.file.type||'application/octet-stream',blobId:bid})}
+    await DB.put('items',{id:uid(),type:'msg',nodeId:S.sel,created:Date.now(),text,files});
+  }catch(e){return toast('Could not save (storage full?)')}
+  $('input').value='';S.pending=[];delete S.drafts[S.sel];renderChips();autosize();await load();render(true);
+}
+/* big writing window */
+function openEditor(title,text,cb,label){
+  $('edTitle').textContent=title;$('edTa').value=text;$('edDone').textContent=label||'Done';S.edCb=cb;
+  $('editor').classList.remove('hidden');setTimeout(()=>{const t=$('edTa');t.focus();t.setSelectionRange(t.value.length,t.value.length)},50);
+}
+function closeEditor(){$('editor').classList.add('hidden')}
+function editorDone(){const v=$('edTa').value;closeEditor();S.edCb&&S.edCb(v)}
+function expandComposer(){openEditor('Write message',$('input').value,v=>{$('input').value=v;autosize();$('input').focus()},'Done')}
+function editMsg(id){
+  const it=S.items.find(x=>x.id===id),m=norm(it);
+  openEditor('Edit message',m.text,async v=>{
+    if(!v.trim()&&!m.files.length)return toast('Message would be empty');
+    it.text=v.trim();it.edited=Date.now();if(it.type==='text')it.type='msg';await DB.put('items',it);await load();render();toast('Saved');
+  },'Save');
+}
+async function delMsg(id){const it=S.items.find(x=>x.id===id);if(!it||!confirm('Delete this message?'))return;await purgeItem(it);await load();render()}
+async function copyMsg(id){
+  const t=norm(S.items.find(x=>x.id===id)).text;if(!t)return toast('No text to copy');
+  try{await navigator.clipboard.writeText(t)}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}
+  toast('Copied');
 }
 async function toggleTask(id,i){const it=S.items.find(x=>x.id===id);it.tasks[i].done=!it.tasks[i].done;await DB.put('items',it);render()}
-async function editItem(id){const it=S.items.find(x=>x.id===id);const v=prompt('Edit',it.text);if(v==null)return;it.text=v;await DB.put('items',it);render()}
-async function copyText(id){
-  const it=S.items.find(x=>x.id===id);
-  try{await navigator.clipboard.writeText(it.text)}catch(e){
-    const ta=document.createElement('textarea');ta.value=it.text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
-  }toast('Copied');
+
+/* ---------- Files, sharing (native Capacitor or browser) ---------- */
+const cap=()=>{const C=window.Capacitor;return C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins&&C.Plugins.Share&&C.Plugins.Filesystem?C.Plugins:null};
+const blobToB64=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
+async function shareFiles({text,files,title}){
+  const P=cap();
+  if(P){
+    const uris=[];
+    for(const f of files){const w=await P.Filesystem.writeFile({path:f.name.replace(/[\\/:*?"<>|]/g,'_'),data:(await blobToB64(f.blob)).split(',')[1],directory:'CACHE'});uris.push(w.uri)}
+    await P.Share.share({title,text:text||undefined,files:uris.length?uris:undefined,dialogTitle:title});return true;
+  }
+  if(navigator.share){
+    try{
+      const fs=files.map(f=>new File([f.blob],f.name,{type:f.blob.type}));const d={title,text:text||undefined};
+      if(fs.length&&navigator.canShare&&navigator.canShare({files:fs}))d.files=fs;
+      await navigator.share(d);return true;
+    }catch(e){if(e.name==='AbortError')return true}
+  }
+  return false;
 }
-async function fileBlobUrl(it){const b=await DB.get('blobs',it.blobId);return b?URL.createObjectURL(b.blob):null}
-async function openFile(id){const it=S.items.find(x=>x.id===id);const u=await fileBlobUrl(it);if(!u)return toast('File missing');window.open(u,'_blank')}
-async function dlFile(id){
-  const it=S.items.find(x=>x.id===id);const u=await fileBlobUrl(it);if(!u)return toast('File missing');
-  const a=document.createElement('a');a.href=u;a.download=it.name;document.body.appendChild(a);a.click();a.remove();
+function browserSave(name,blob){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000)}
+async function getBlob(f){const b=await DB.get('blobs',f.blobId);return b?b.blob:null}
+async function shareMsg(id){
+  const it=S.items.find(x=>x.id===id),m=norm(it),files=[];
+  for(const f of m.files){const b=await getBlob(f);if(b)files.push({name:f.name,blob:b})}
+  const ok=await shareFiles({text:m.text,files,title:'DevVault'});
+  if(!ok){if(m.text){await copyMsg(id);toast('Sharing not supported here — text copied')}else toast('Sharing not supported here')}
 }
+async function openFile(id,i){
+  const f=norm(S.items.find(x=>x.id===id)).files[i],b=await getBlob(f);if(!b)return toast('File missing');
+  if(cap())return shareFiles({files:[{name:f.name,blob:b}],title:f.name});
+  window.open(URL.createObjectURL(b),'_blank');
+}
+async function dlFile(id,i){
+  const f=norm(S.items.find(x=>x.id===id)).files[i],b=await getBlob(f);if(!b)return toast('File missing');
+  if(cap())return shareFiles({files:[{name:f.name,blob:b}],title:f.name});
+  browserSave(f.name,b);
+}
+async function viewImg(bid){
+  const b=await DB.get('blobs',bid);if(!b)return;
+  const it=S.items.find(i=>norm(i).files.some(f=>f.blobId===bid)),f=norm(it).files.find(f=>f.blobId===bid);
+  $('vImg').src=URL.createObjectURL(b.blob);
+  $('vSave').innerHTML=ic('dl');$('vSave').onclick=e=>{e.stopPropagation();cap()?shareFiles({files:[{name:f.name,blob:b.blob}],title:f.name}):browserSave(f.name,b.blob)};
+  $('vX').innerHTML=ic('x');$('viewer').classList.remove('hidden');
+}
+function closeViewer(){$('viewer').classList.add('hidden')}
 
 /* ---------- Rendering ---------- */
-function fmtSize(n){return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB'}
-function hl(h,q){if(!q)return h;const r=new RegExp('('+esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');return h.replace(r,'<mark>$1</mark>')}
+const fmtSize=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
+function hl(h,q){if(!q)return h;return h.replace(new RegExp('('+esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>')}
 function md(s,q){
   return s.split(/```/).map((p,i)=>{
     if(i%2)return `<pre class="code">${hl(esc(p.replace(/^\w*\n/,'')),q)}</pre>`;
-    const h=hl(esc(p),q).replace(/`([^`\n]+)`/g,'<code class="ic">$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/^#{1,3} (.+)$/gm,'<b style="font-size:15px">$1</b>');
+    const h=hl(esc(p),q).replace(/`([^`\n]+)`/g,'<code class="ic">$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/^#{1,3} (.+)$/gm,'<b style="font-size:16px">$1</b>');
     return `<div style="white-space:pre-wrap;word-break:break-word;line-height:1.55">${h}</div>`;
   }).join('');
 }
-function itemHTML(it,q,showLoc){
-  const loc=showLoc&&node(it.nodeId)?`<a href="#" class="truncate" style="color:var(--acc)" onclick="select('${it.nodeId}');return false">${esc(pathOf(it.nodeId).join(' / '))}</a>`:'';
-  const time=new Date(it.created).toLocaleString([],{dateStyle:'medium',timeStyle:'short'});
-  let body='',acts='';
-  if(it.type==='text'){body=md(it.text,q);acts=`<button class="btn" onclick="copyText('${it.id}')">Copy</button><button class="btn" onclick="editItem('${it.id}')">Edit</button>`}
-  else if(it.type==='check'){
-    body=it.tasks.map((t,i)=>`<label class="flex gap-2 items-start py-1 cursor-pointer"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${it.id}',${i})" class="mt-1" style="accent-color:var(--acc);width:16px;height:16px"><span style="${t.done?'text-decoration:line-through;color:var(--mute)':''}">${hl(esc(t.t),q)}</span></label>`).join('');
-    body+=`<div class="text-xs mt-1" style="color:var(--mute)">${it.tasks.filter(t=>t.done).length}/${it.tasks.length} done</div>`;
-  }else{
-    const icon=it.mime.startsWith('image/')?'🖼':it.mime==='application/pdf'?'📕':'📄';
-    body=`<div class="flex items-center gap-3"><span style="font-size:24px">${icon}</span><div class="min-w-0"><div class="truncate font-medium">${hl(esc(it.name),q)}</div><div class="text-xs" style="color:var(--mute)">${fmtSize(it.size)} · ${esc(it.mime)}</div></div></div>`;
-    if(it.mime.startsWith('image/'))body+=`<img data-blob="${it.blobId}" class="mt-2 rounded-md max-h-64" alt="">`;
-    acts=`<button class="btn" onclick="openFile('${it.id}')">Preview</button><button class="btn" onclick="dlFile('${it.id}')">Download</button>`;
-  }
-  return `<article class="panel rounded-lg p-3"><div class="flex items-center gap-2 mb-2 text-xs" style="color:var(--mute)"><span style="white-space:nowrap">${time}</span>${loc}<span class="ml-auto flex gap-1">${acts}<button class="btn" onclick="delItem('${it.id}')" aria-label="Delete">✕</button></span></div>${body}</article>`;
+function dayLabel(ts){
+  const d=new Date(ts),t=new Date(),y=new Date(Date.now()-864e5);
+  if(d.toDateString()===t.toDateString())return'Today';if(d.toDateString()===y.toDateString())return'Yesterday';
+  return d.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'});
+}
+function msgHTML(it,q,showLoc){
+  const m=norm(it),time=new Date(it.created).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  const loc=showLoc&&node(it.nodeId)?`<a href="#" class="truncate" style="color:var(--acc);display:block;margin-bottom:4px;font-size:12px" onclick="select('${it.nodeId}');return false">${esc(pathOf(it.nodeId).join(' / '))}</a>`:'';
+  let b='';
+  m.files.forEach((f,i)=>{
+    b+=f.mime.startsWith('image/')?`<img data-blob="${f.blobId}" class="att-img" onclick="viewImg('${f.blobId}')" alt="${esc(f.name)}">`:
+    `<div class="att-file" onclick="openFile('${it.id}',${i})">${ic('file',22)}<div class="min-w-0 flex-1"><div class="truncate">${hl(esc(f.name),q)}</div><div class="text-xs" style="color:var(--mute)">${fmtSize(f.size)}</div></div><span onclick="event.stopPropagation();dlFile('${it.id}',${i})" style="padding:6px">${ic('dl')}</span></div>`;
+  });
+  if(m.text)b+=md(m.text,q);
+  if(m.tasks){b+=m.tasks.map((t,i)=>`<label class="flex gap-2 items-start py-1 cursor-pointer"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${it.id}',${i})" class="mt-1" style="accent-color:var(--acc);width:16px;height:16px"><span style="${t.done?'text-decoration:line-through;color:var(--mute)':''}">${hl(esc(t.t),q)}</span></label>`).join('')}
+  const acts=`<button class="ib sm" onclick="shareMsg('${it.id}')" title="Share">${ic('share',16)}</button>`+
+    (m.tasks?'':`<button class="ib sm" onclick="copyMsg('${it.id}')" title="Copy">${ic('copy',16)}</button><button class="ib sm" onclick="editMsg('${it.id}')" title="Edit">${ic('edit',16)}</button>`)+
+    `<button class="ib sm" onclick="delMsg('${it.id}')" title="Delete">${ic('trash',16)}</button>`;
+  return `<div class="msg">${loc}<div class="bubble">${b}<div class="mt">${time}${it.edited?' · edited':''}</div></div><div class="acts">${acts}</div></div>`;
 }
 const GLYPH=['■','●','○'];
 function rowsHTML(pid,depth){
   return kids(pid).map(n=>{
     const k=kids(n.id),open=S.open[n.id],on=n.id===S.sel&&!S.query.trim();
     return `<div class="nav ${on?'on':''}" style="padding-left:${6+depth*16}px;${depth===0?'color:var(--text);font-weight:600':''}" onclick="select('${n.id}')">`+
-      `<span style="width:16px;text-align:center;font-size:11px" onclick="event.stopPropagation();S.open['${n.id}']=!S.open['${n.id}'];renderTree()">${k.length?(open?'▾':'▸'):''}</span>`+
+      `<span style="width:20px;text-align:center;font-size:11px;padding:8px 0" onclick="event.stopPropagation();S.open['${n.id}']=!S.open['${n.id}'];renderTree()">${k.length?(open?'▾':'▸'):''}</span>`+
       `<span style="font-size:9px;color:var(--acc)">${GLYPH[Math.min(depth,2)]}</span><span class="truncate">${esc(n.name)}</span>`+
-      `<span class="x" onclick="event.stopPropagation();addNode('${n.id}')" title="Add sub-branch">＋</span>`+
-      `<span class="x" style="margin-left:4px" onclick="event.stopPropagation();renameNode('${n.id}')" title="Rename">✎</span>`+
-      `<span class="x" style="margin-left:4px" onclick="event.stopPropagation();delNode('${n.id}')" title="Delete">🗑</span></div>`+
-      (open&&k.length?rowsHTML(n.id,depth+1):'');
+      `<span class="dots" onclick="event.stopPropagation();nodeMenu('${n.id}')">${ic('more')}</span></div>`+(open&&k.length?rowsHTML(n.id,depth+1):'');
   }).join('');
 }
-function renderTree(){
-  $('tree').innerHTML=S.nodes.length?rowsHTML(null,0):'<div class="p-3 text-sm" style="color:var(--mute)">Nothing here yet. Tap “+ Block” to add your first top-level branch.</div>';
+function renderTree(){$('tree').innerHTML=S.nodes.length?rowsHTML(null,0):'<div class="p-3 text-sm" style="color:var(--mute)">Nothing here yet. Tap “+ Block” to start.</div>'}
+function feedHTML(list,q,showLoc){
+  let last='',h='';
+  for(const it of list){const d=new Date(it.created).toDateString();if(d!==last){last=d;h+=`<div class="day">${dayLabel(it.created)}</div>`}h+=msgHTML(it,q,showLoc)}
+  return h;
 }
 function render(scroll){
-  renderTree();renderComposer();
-  const feed=$('feed'),q=S.query.trim(),hdr=$('hdr');
-  hdr.innerHTML='';
+  renderTree();
+  const feed=$('feed'),q=S.query.trim();$('hdr').innerHTML='';
+  $('composer').style.display=(S.sel&&node(S.sel)&&!q)?'':'none';
+  $('bSend').innerHTML=ic('up',20);$('bExpand').innerHTML=ic('expand',18);document.querySelector('.cbox .rb').innerHTML=ic('plus',22);
   if(q){
-    $('title').textContent=`Search: "${q}"`;
-    const lq=q.toLowerCase();
-    const hits=S.items.filter(it=>it.type==='text'?it.text.toLowerCase().includes(lq):it.type==='file'?it.name.toLowerCase().includes(lq):it.tasks.some(t=>t.t.toLowerCase().includes(lq)));
-    feed.innerHTML=hits.length?hits.map(i=>itemHTML(i,q,true)).join(''):'<div style="color:var(--mute)">No matches in any branch.</div>';
+    $('title').textContent=`Search: "${q}"`;const lq=q.toLowerCase();
+    const hits=S.items.filter(it=>{const m=norm(it);return m.text.toLowerCase().includes(lq)||m.files.some(f=>f.name.toLowerCase().includes(lq))||(m.tasks||[]).some(t=>t.t.toLowerCase().includes(lq))});
+    feed.innerHTML=hits.length?feedHTML(hits,q,true):'<div style="color:var(--mute)">No matches in any branch.</div>';
   }else if(!S.sel||!node(S.sel)){
     S.sel=null;$('title').textContent='DevVault';
     feed.innerHTML=S.nodes.length?'<div style="color:var(--mute)">Pick a branch from the sidebar.</div>':
-      `<div class="panel rounded-lg p-4 max-w-md"><b>Welcome to DevVault</b><p class="mt-2" style="color:var(--mute)">Build your own tree: blocks (like YouTube, Games, Study) with branches inside them, as deep as you like. Every branch can hold prompts, notes, checklists and files, and every name can be renamed anytime. All data stays on this device.</p><button class="btn btn-acc mt-3" onclick="addNode(null)">Add first block</button></div>`;
+    `<div class="panel rounded-lg p-4 max-w-md"><b>Welcome to DevVault</b><p class="mt-2" style="color:var(--mute)">Build your own tree of blocks and branches. Every branch is a chat where you can write, attach photos and files, and keep everything on this device.</p><button class="btn btn-acc mt-3" onclick="addNode(null)">Add first block</button></div>`;
   }else{
     const n=node(S.sel);
     $('title').innerHTML=pathOf(n.id).map(esc).join(' <span style="color:var(--mute)">/</span> ');
-    hdr.innerHTML=`<button class="btn" onclick="addNode('${n.id}')">＋ Branch</button><button class="btn" onclick="renameNode('${n.id}')">Rename</button>`;
-    const its=S.items.filter(i=>i.nodeId===S.sel),sub=kids(n.id);
-    let h='';
-    if(sub.length)h+=`<div class="flex gap-2" style="flex-wrap:wrap">${sub.map(s=>`<button class="btn" onclick="select('${s.id}')">${GLYPH[Math.min(pathOf(s.id).length-1,2)]} ${esc(s.name)}</button>`).join('')}</div>`;
-    h+=its.length?its.map(i=>itemHTML(i)).join(''):'<div style="color:var(--mute)">Empty. Add text or a checklist below, or drop a file.</div>';
-    feed.innerHTML=h;
+    $('hdr').innerHTML=`<button class="ib" onclick="nodeMenu('${n.id}')" aria-label="Branch menu">${ic('more')}</button>`;
+    const sub=kids(n.id),its=S.items.filter(i=>i.nodeId===S.sel);
+    feed.innerHTML=(sub.length?`<div class="flex gap-2" style="flex-wrap:wrap;margin-bottom:12px">${sub.map(s=>`<button class="btn" onclick="select('${s.id}')">${s.name?esc(s.name):''}</button>`).join('')}</div>`:'')+
+      (its.length?feedHTML(its):'<div style="color:var(--mute);text-align:center;margin-top:30px">No messages yet. Write below or tap + to attach.</div>');
   }
   feed.querySelectorAll('img[data-blob]').forEach(async im=>{const b=await DB.get('blobs',im.dataset.blob);if(b)im.src=URL.createObjectURL(b.blob)});
   if(scroll)feed.scrollTop=feed.scrollHeight;
 }
 function onSearch(v){S.query=v;render()}
 
-/* ---------- Backup ---------- */
-function blobToB64(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}
+/* ---------- Backup / Restore (exact copy, same order) ---------- */
 async function exportAll(){
-  toast('Preparing backup…');
-  const blobs=[];for(const b of await DB.all('blobs'))blobs.push({id:b.id,type:b.blob.type,data:await blobToB64(b.blob)});
-  const data={app:'DevVault',version:2,exported:new Date().toISOString(),nodes:S.nodes,items:S.items,blobs};
-  const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
-  const a=document.createElement('a');a.href=url;a.download=`devvault-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
-  toast('Backup exported');
+  try{
+    toast('Preparing backup…');
+    const blobs=await DB.all('blobs'),parts=[];
+    parts.push('{"app":"DevVault","version":3,"exported":'+JSON.stringify(new Date().toISOString())+',"counts":'+JSON.stringify({nodes:S.nodes.length,items:S.items.length,files:blobs.length})+',"ui":'+JSON.stringify({open:S.open,sel:S.sel})+',"nodes":'+JSON.stringify(S.nodes)+',"items":'+JSON.stringify(S.items)+',"blobs":[');
+    for(let i=0;i<blobs.length;i++)parts.push((i?',':'')+JSON.stringify({id:blobs[i].id,type:blobs[i].blob.type,data:await blobToB64(blobs[i].blob)}));
+    parts.push(']}');
+    const blob=new Blob(parts,{type:'application/json'}),name='DevVault-backup-'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json';
+    if(cap()){await shareFiles({files:[{name,blob}],title:'DevVault backup'})}else{browserSave(name,blob)}
+    toast(`Backup ready: ${S.nodes.length} branches, ${S.items.length} messages, ${blobs.length} files`);
+  }catch(e){toast('Backup failed: '+e.message)}
 }
 async function importAll(file){
   if(!file)return;
   try{
     const d=JSON.parse(await file.text());
-    if(d.app!=='DevVault')throw new Error('Not a DevVault backup');
-    if(!confirm('Importing replaces all current data. Continue?'))return;
+    if(d.app!=='DevVault')throw new Error('not a DevVault backup');
     let nodes=d.nodes,items=d.items;
-    if(!nodes){ // version 1 backup: projects/channels
+    if(!nodes){
       nodes=[...d.projects.map(p=>({id:p.id,parentId:null,name:p.name,created:p.created})),...d.channels.map(c=>({id:c.id,parentId:c.projectId,name:c.name,created:c.created}))];
       items=d.items.map(i=>{const o={...i,nodeId:i.channelId};delete o.channelId;delete o.projectId;return o});
     }
-    await DB.clear();
+    nodes=nodes.map(n=>({...n,order:n.order??n.created}));
+    if(!confirm(`Restore backup?\n${nodes.length} branches, ${items.length} messages, ${d.blobs.length} files.\nThis REPLACES everything currently in the app.`))return;
+    toast('Restoring…');await DB.clear();
     for(const n of nodes)await DB.put('nodes',n);
     for(const i of items)await DB.put('items',i);
     for(const b of d.blobs){const blob=await (await fetch(b.data)).blob();await DB.put('blobs',{id:b.id,blob})}
-    S.sel=null;await load();render();toast('Backup restored');
-  }catch(e){toast('Import failed: '+e.message)}
+    S.drafts={};S.pending=[];$('input').value='';await load();
+    if(S.nodes.length!==nodes.length||S.items.length!==items.length)throw new Error('verification failed');
+    S.open=(d.ui&&d.ui.open)||{};S.sel=(d.ui&&node(d.ui.sel))?d.ui.sel:null;render(true);toast('Restored: identical copy of the backup');
+  }catch(e){toast('Restore failed: '+e.message)}
 }
 
 /* ---------- Init ---------- */
 ['dragenter','dragover'].forEach(e=>$('feed').addEventListener(e,ev=>{ev.preventDefault();$('feed').classList.add('drop')}));
 ['dragleave','drop'].forEach(e=>$('feed').addEventListener(e,ev=>{ev.preventDefault();$('feed').classList.remove('drop')}));
-$('feed').addEventListener('drop',ev=>{if(ev.dataTransfer&&ev.dataTransfer.files.length)uploadFiles(ev.dataTransfer.files)});
-$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();submitItem()}});
+$('feed').addEventListener('drop',ev=>{if(S.sel&&ev.dataTransfer&&ev.dataTransfer.files.length)addPending(ev.dataTransfer.files)});
+$('input').addEventListener('paste',e=>{const fs=[...(e.clipboardData?e.clipboardData.files:[])];if(fs.length){e.preventDefault();addPending(fs)}});
+$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();sendMsg()}});
 (async()=>{
   await DB.init();await migrate();await load();
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-  render();
+  render();autosize();
 })();
 </script>
 </body>
